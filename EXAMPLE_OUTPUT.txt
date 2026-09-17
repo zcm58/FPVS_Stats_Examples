@@ -7,19 +7,19 @@ All values are synthetic, not research findings.
 SYNTHETIC DATA | Group_A | Positive Valence | Occipital ROI
 n = 25 participants
 Mean BCA = 0.1607 uV; SD = 0.1335 uV
-t(24) = 6.0175; p = 3.26361e-06
-95% CI for the population mean: [0.1056, 0.2158] uV
+t(24) = 6.0175; one-sided p = 1.63181e-06
+95% one-sided lower confidence bound for the population mean = 0.1150 uV
 
 ==============================================================================
 02_paired_ttest.py
 ==============================================================================
-SYNTHETIC DATA | Group_A | Negative Valence minus Positive Valence
+SYNTHETIC DATA | Group_A | Positive Valence minus Negative Valence
 n = 25 paired participants
-Negative Valence mean = 0.2507 uV
-Positive Valence mean = 0.1607 uV
-Mean within-person difference = 0.0900 uV
-t(24) = 5.9111; p = 4.24175e-06
-95% CI for the mean difference: [0.0586, 0.1214] uV
+Positive Valence mean occipital oddball response = 0.1607 uV
+Negative Valence mean occipital oddball response = 0.2507 uV
+Mean within-person difference = -0.0900 uV
+t(24) = -5.9111; p = 4.24175e-06
+95% CI for the mean difference: [-0.1214, -0.0586] uV
 
 ==============================================================================
 03_independent_ttests_and_holm.py
@@ -27,9 +27,9 @@ t(24) = 5.9111; p = 4.24175e-06
 SYNTHETIC DATA | 25 participants per group | one family of four tests
                    comparison  mean_A_uv  mean_B_uv  A_minus_B_uv       t      df       p_raw  CI95_low_unadjusted  CI95_high_unadjusted     p_holm
 Overall: mean of 3 conditions    0.27425   0.155701      0.118549 3.62722 46.4309 0.000710242            0.0527775               0.18432 0.00213073
-                  Positive Valence   0.160717   0.110413     0.0503037 1.46548 45.9576    0.149598           -0.0187921              0.119399   0.149598
-                  Negative Valence   0.250712   0.159329     0.0913834 2.62724 47.7742   0.0115364            0.0214388              0.161328  0.0230728
-                  Neutral Angry    0.41132   0.197361      0.213959 5.78608 46.8362 5.72525e-07             0.139561              0.288356 2.2901e-06
+             Positive Valence   0.160717   0.110413     0.0503037 1.46548 45.9576    0.149598           -0.0187921              0.119399   0.149598
+             Negative Valence   0.250712   0.159329     0.0913834 2.62724 47.7742   0.0115364            0.0214388              0.161328  0.0230728
+                Neutral Angry    0.41132   0.197361      0.213959 5.78608 46.8362 5.72525e-07             0.139561              0.288356 2.2901e-06
 
 ==============================================================================
 04_mann_whitney_u.py
@@ -41,7 +41,39 @@ Group_B median = 0.1989 uV
 U for Group_A = 551.00; p = 3.87683e-06
 Observed A > B pair fraction, with half-credit for ties: 0.882
 
-Examples 5 and 6 were not executed with Pingouin: the package was not
-installed and installation was blocked by network/DNS access. Both scripts
-passed Python syntax checks and were reviewed against the official API.
-No output below is represented as an executed Pingouin result.
+==============================================================================
+05_repeated_measures_anova.py
+==============================================================================
+SYNTHETIC DATA | Group_A (adults) | 3 conditions x 2 ROIs | 25 people, 150 rows
+Mean BCA in uV:
+roi                 LOT    ROT
+condition
+Positive Valence 0.0968 0.1207
+Negative Valence 0.1647 0.2744
+Neutral Angry    0.3396 0.4675
+         Source       SS  ddof1  ddof2        MS       F       p_unc   p_GG_corr      np2      eps
+      condition   2.2179      2     48   1.10895 173.915 1.02233e-22 3.31404e-21 0.878736 0.925979
+            roi 0.284733      1     24  0.284733 48.2552 3.49226e-07 3.49226e-07 0.667844        1
+condition * roi 0.077033      2     48 0.0385165 9.38033 0.000364163 0.000371409 0.281014 0.996295
+
+==============================================================================
+06_mixed_anova.py
+==============================================================================
+SYNTHETIC DATA | 2 groups x 3 conditions x 2 ROIs | 50 people, 300 rows
+Group_A = adults; Group_B = adolescents. Mean BCA in uV:
+roi                         LOT    ROT
+group   condition
+Group_A Positive Valence 0.0968 0.1207
+        Negative Valence 0.1647 0.2744
+        Neutral Angry    0.3396 0.4675
+Group_B Positive Valence 0.1115 0.1357
+        Negative Valence 0.1778 0.2062
+        Neutral Angry    0.2179 0.2721
+                 Source       F  df1_for_report  df2_for_report  epsilon  p_for_report       np2
+                  Group 7.12567               1              48        1     0.0103372  0.129262
+              Condition 175.453         1.98261         95.1653 0.991305   1.59041e-32  0.785189
+                    ROI 47.3532               1              48        1   1.11785e-08  0.496608
+      Group x Condition 32.8982         1.98261         95.1653 0.991305   1.58335e-11  0.406662
+            Group x ROI 8.32364               1              48        1    0.00584536  0.147782
+        Condition x ROI 8.96504         1.99615         95.8153 0.998076   0.000272257  0.157378
+Group x Condition x ROI 3.89847         1.99615         95.8153 0.998076      0.023635 0.0751173

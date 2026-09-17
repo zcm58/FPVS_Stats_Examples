@@ -1,3 +1,8 @@
+# FPVS paper using paired t-tests:
+# - Differences in own-face but not own-name discrimination between autistic and
+#   neurotypical adults: A fast periodic visual stimulation-EEG study.
+#   DOI: https://doi.org/10.1016/j.cortex.2023.10.023
+
 """EXAMPLE 2: Do the SAME participants respond differently in two conditions?
 
 Example one explored how to test whether an ROI has a statistically significant response. That information

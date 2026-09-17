@@ -1,3 +1,8 @@
+# FPVS paper using a one-sample t-test against zero:
+# - At a single glance: Fast periodic visual stimulation uncovers the spatio-temporal
+#   dynamics of brief facial expression changes in the human brain.
+#   DOI: https://doi.org/10.1093/cercor/bhw223
+
 """EXAMPLE 1: Is the average final ROI response above zero?
 
 Data: SYNTHETIC data from Elizabeth's experiment. We'll use a hypothetical FPVS condition,
@@ -52,7 +57,7 @@ values = selected["bca_uv"]
 # The t-statistic tells us how far our average is from zero compared with the
 # uncertainty in that average. Here, it's the mean divided by its standard error.
 # That standard error depends on how much people vary across recordings and how many people we have.
-# We only care about BCA responses above zero, so we're using alternative="greater".
+# We only care about BCA responses above zero, so we're using alternative="greater" aka greater than zero.
 # This tests whether the population average is above zero, with zero or below
 # as the null hypothesis. We're choosing that direction based on our question.
 # The t-statistic is calculated the same way, but the p-value now looks only

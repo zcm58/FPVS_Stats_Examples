@@ -1,3 +1,12 @@
+# FPVS paper using Welch's t-test for behavioral outcomes:
+# - Fast periodic visual stimulation EEG reveals reduced neural sensitivity to
+#   fearful faces in children with autism.
+#   DOI: https://doi.org/10.1007/s10803-019-04172-0
+# FPVS paper using Holm correction:
+# - Identity-specific neural responses to three categories of face familiarity
+#   (own, friend, stranger) using fast periodic visual stimulation.
+#   DOI: https://doi.org/10.1016/j.neuropsychologia.2020.107415
+
 """EXAMPLE 3: Do the two groups respond differently?
 
 What if we wanted to make a general comparison between your group and the adolescent group? There are

@@ -1,3 +1,8 @@
+# FPVS paper using Mann-Whitney U for behavioral outcomes:
+# - Fast periodic visual stimulation EEG reveals reduced neural sensitivity to
+#   fearful faces in children with autism.
+#   DOI: https://doi.org/10.1007/s10803-019-04172-0
+
 """EXAMPLE 4: Compare two groups using the ranks of their responses.
 
 Example three compared the average responses between your group and the adolescent group.

@@ -1,7 +1,12 @@
-"""EXAMPLE 6: Compare both groups across all three conditions.
+# FPVS paper using mixed-design ANOVA:
+# - Differences in own-face but not own-name discrimination between autistic and
+#   neurotypical adults: A fast periodic visual stimulation-EEG study.
+#   DOI: https://doi.org/10.1016/j.cortex.2023.10.023
+
+"""EXAMPLE 6: Compare groups, conditions, and LOT/ROT responses together.
 
 Now let's put all the previous examples together. We have your adult group and the adolescent group,
-and everyone completed Positive Valence, Negative Valence, and Neutral Angry.
+and everyone completed Positive Valence, Negative Valence, and Neutral Angry at LOT and ROT.
 We might want to know whether the groups differ overall, whether the conditions differ overall,
 and whether the pattern across conditions is different between the groups.
 
@@ -13,9 +18,9 @@ Valence, but much farther apart in Neutral Angry. That gives us a different stor
 the group difference changes with the condition. We call that a group-by-condition interaction.
 
 To look at these questions together, we'll use a mixed ANOVA. 'Mixed' means we're combining
-a between-person factor (group) with a within-person factor (condition).
-Each person belongs to only one group, but contributes a response in all three conditions.
-We have two groups and three conditions, so you'll also hear this called a 2 x 3 mixed design.
+a between-person factor (group) with two within-person factors (condition and ROI).
+Each person belongs to only one group, but contributes six responses: three conditions at two ROIs.
+We have two groups, three conditions, and two ROIs: a 2 x 3 x 2 mixed design.
 
 Why use ANOVA here? We want to compare the patterns across conditions between the groups.
 Separate tests could tell us whether adults and adolescents differ in each condition,
@@ -25,8 +30,8 @@ Also, adults and adolescents are different people, so comparing those groups cal
 an independent-group comparison. Paired tests apply to measurements from the same person.
 
 We're still using synthetic data, with 25 people per group. The goal is to understand the
-three questions and how to read the output before applying this to your actual dataset.
-The code uses one occipital ROI. The lecture notes at the end explain how we'd add LOT and ROT.
+group and condition questions above, plus the ROI questions explained below. We now test
+all seven effects, including whether the Group x Condition pattern changes between LOT and ROT.
 
 Run: python 06_mixed_anova.py
 You'll need Pingouin installed. It's listed in requirements.txt.
@@ -36,152 +41,113 @@ from pathlib import Path
 import pandas as pd
 import pingouin as pg
 from scipy import stats
+from statsmodels.formula.api import ols
 
-# This time, we keep the whole spreadsheet: both groups and all three conditions.
-# Participant IDs need to identify different people across the whole dataset.
-# A01 and B01 are different people. Within A01, the three condition rows belong together.
+# This time, we keep both groups, all three conditions, and both ROIs.
+# A01 and B01 are different people. A01's six rows all belong to the same adult.
+# We have 300 rows, but still only 50 independent participants.
+data = pd.read_csv(Path(__file__).with_name("synthetic_multi_roi.csv"))
 
-data = pd.read_csv(Path(__file__).with_name("synthetic_occipital_roi.csv"))
+# First, line up LOT and ROT for the SAME person in the SAME condition.
+# This is the same idea as matching participants for the paired test in Example 2.
+wide = data.pivot(index=["participant", "group", "condition"], columns="roi", values="bca_uv").reset_index()
+wide["roi_average"] = (wide["LOT"] + wide["ROT"]) / 2
+wide["roi_difference"] = wide["ROT"] - wide["LOT"]
 
-# Now we're putting the two ideas together: different groups of people,
-# with each person completing all three conditions. That's the "mixed" design.
-# Group is the between-person factor, and condition is the within-person factor.
-# We still have 50 people, even though the spreadsheet has 150 rows.
+# Why make an average AND a difference? Together they retain both ROI values.
+# The average tells us about responses across the two ROIs. The difference tells
+# us how much stronger ROT is than LOT. A negative difference means LOT is higher.
+# We keep both views, so we aren't averaging away the ROI question.
 #
-# There are three questions in the output:
-# group: Do the groups differ when we average across the three conditions?
-# condition: Do the conditions differ when we average across the two groups?
-# Interaction: Does the size or direction of the group difference change by condition?
+# Pingouin's mixed_anova accepts only one within-person factor. With exactly TWO
+# ROIs and this complete, balanced design, these two views let us calculate the
+# same F tests as the full Group x Condition x ROI ANOVA using smaller ANOVAs.
+# This is a decomposition of the full design, not two separate tests at LOT and ROT.
+# It is specific to two ROIs; adding a third ROI would require a different calculation.
 #
-# For example, Group_A might be higher in positive valence but lower in negative
-# valence. An overall group average could hide that pattern.
-# Finding significance in one condition but not another doesn't establish an
-# interaction by itself. We need the interaction test to answer that question.
-# The first two questions are called main effects. They average over the other factor.
-# For the group effect, each condition contributes equally to the comparison.
-# For the condition effect, we're looking across the two equally sized groups.
-# An interaction asks about differences IN those differences.
-# For example, an adult-adolescent gap of 0.02 uV in Positive Valence and 0.20 uV
-# in Neutral Angry suggests a different pattern from a constant 0.10 uV gap everywhere.
-# Those numbers are just an illustration. The test uses participant-level variation
-# to evaluate the pattern, rather than deciding based on two sample gaps alone.
-#
-# dv is our BCA outcome. between identifies group, within identifies condition,
-# and subject identifies each person. We use correction=False here because we're
-# going to calculate the GG-adjusted results explicitly in the next section.
-# effsize="np2" asks Python to include partial eta-squared in the results.
+# On the averages, Group, Condition, and their interaction have their usual meaning.
+# On the differences, each question gains an ROI component:
+# Group asks whether the ROT-minus-LOT gap differs between age groups (Group x ROI).
+# Condition asks whether that gap changes by condition (Condition x ROI).
+# Their interaction asks whether that change differs by group (Group x Condition x ROI).
+views = [
+    ("roi_average", {"group": "Group", "condition": "Condition", "Interaction": "Group x Condition"}),
+    ("roi_difference", {"group": "Group x ROI", "condition": "Condition x ROI", "Interaction": "Group x Condition x ROI"}),
+]
+tables = []
+for outcome, effect_names in views:
+    result = pg.mixed_anova(
+        data=wide,
+        dv=outcome,
+        between="group",
+        within="condition",
+        subject="participant",
+        correction=False,
+        effsize="np2",
+    )
 
-result = pg.mixed_anova(
-    data=data,
-    dv="bca_uv",
-    between="group",
-    within="condition",
-    subject="participant",
-    correction=False,
-    effsize="np2",
-)
+    # Apply the GG correction to the effects involving condition in this view.
+    # We subtract each group-condition mean to estimate the error covariance.
+    # This keeps the groups' different mean patterns out of the epsilon estimate.
+    # The average view and the difference view each get their OWN epsilon.
+    errors = wide.copy()
+    errors[outcome] = wide[outcome] - wide.groupby(["group", "condition"])[outcome].transform("mean")
+    epsilon = pg.epsilon(errors, dv=outcome, within="condition", subject="participant", correction="gg")
+    repeated_effect = result["Source"].isin(["condition", "Interaction"])
+    result["epsilon"] = 1.0
+    result.loc[repeated_effect, "epsilon"] = epsilon
+    result["df1_for_report"] = result["DF1"] * result["epsilon"]
+    result["df2_for_report"] = result["DF2"] * result["epsilon"]
+    result["p_for_report"] = stats.f.sf(result["F"], result["df1_for_report"], result["df2_for_report"])
+    result["Source"] = result["Source"].map(effect_names)
+    tables.append(result)
 
-# This next part is a little more involved. We're applying the GG correction
-# from Example 5 to both the condition effect and the interaction.
-# The ANOVA call above gives us uncorrected tests, so we calculate those two
-# corrected p-values below. The group effect doesn't need a sphericity correction
-# because it compares different people rather than repeated measurements.
-#
-# First, we subtract each group-condition average from the values in that group
-# and condition. The leftover values are called residuals, or errors.
-# We use these to estimate epsilon, so differences in the groups' condition
-# patterns don't get mixed into our estimate of the error relationships.
-# The ANOVA itself still uses the original BCA values.
-# This approach assumes the groups have the same pattern of error variances
-# and relationships between conditions (their covariance matrices).
-# For example, if A01 has 0.30 uV and their group-condition average is 0.20 uV,
-# their residual is 0.10 uV. "Error" here means deviation from the fitted average;
-# it doesn't mean the recording was a mistake or that we should remove it.
-# data.copy() gives us a separate table for this calculation.
-# groupby finds each group-condition combination, and transform("mean") puts its
-# average beside every corresponding row so the subtraction lines up correctly.
+# That gives us six effects. We still need the overall ROI effect: is the mean
+# ROT-minus-LOT gap zero after averaging conditions and giving both groups equal weight?
+# First, give each person ONE average ROI difference. The model below keeps group
+# in the analysis, so its error comes from differences between people WITHIN groups.
+# An ordinary one-sample test that ignored group would use the wrong error term here.
+participant_differences = wide.groupby(["participant", "group"], as_index=False)["roi_difference"].mean()
+roi_model = ols("roi_difference ~ C(group, Sum)", data=participant_differences).fit()
 
-errors = data.copy()
-errors["bca_uv"] = data["bca_uv"] - data.groupby(["group", "condition"])["bca_uv"].transform("mean")
-epsilon = pg.epsilon(errors, dv="bca_uv", within="condition", subject="participant", correction="gg")
+# This formula is a small regression used to calculate one ANOVA effect.
+# C(group, Sum) codes the groups around their shared average. The Intercept is
+# the equally weighted average ROI difference, rather than one group's difference.
+# Testing that Intercept against zero gives the ROI main effect. With one effect
+# degree of freedom, F = t squared. The error df is 50 people minus 2 group means = 48.
+roi_f = float(roi_model.tvalues["Intercept"] ** 2)
+roi_df = float(roi_model.df_resid)
+tables.append(pd.DataFrame([{
+    "Source": "ROI", "F": roi_f, "df1_for_report": 1.0, "df2_for_report": roi_df,
+    "epsilon": 1.0, "p_for_report": stats.f.sf(roi_f, 1, roi_df), "np2": roi_f / (roi_f + roi_df),
+}]))
 
-# Now we multiply both degrees of freedom by epsilon, keeping F the same.
-# stats.f.sf gives us the chance of an F value at least this large under the null,
-# using those degrees of freedom. That's our p-value.
-# p_for_report uses GG for condition and the interaction, and the ordinary
-# p-value for group. We haven't applied a Holm correction here.
-result["df1_for_report"] = result["DF1"].astype(float)
-result["df2_for_report"] = result["DF2"].astype(float)
-repeated_effect = result["Source"].isin(["condition", "Interaction"])
-result.loc[repeated_effect, ["df1_for_report", "df2_for_report"]] *= epsilon
-result["p_for_report"] = stats.f.sf(result["F"], result["df1_for_report"], result["df2_for_report"])
+# Put the seven effects into one table. For effects involving condition, the
+# reporting df and p-values already include GG. ROI has two levels, so ROI and
+# Group x ROI don't require a sphericity correction. Group doesn't require one either.
+# Decimal degrees of freedom are expected after GG. F stays the same.
+effect_order = ["Group", "Condition", "ROI", "Group x Condition", "Group x ROI", "Condition x ROI", "Group x Condition x ROI"]
+result = pd.concat(tables, ignore_index=True).set_index("Source").loc[effect_order].reset_index()
+columns = ["Source", "F", "df1_for_report", "df2_for_report", "epsilon", "p_for_report", "np2"]
+result = result[columns]
 
-# repeated_effect marks the condition and Interaction rows. The .loc line above
-# changes the reporting degrees of freedom for those rows only.
-# Decimal degrees of freedom are expected after multiplying by epsilon.
-# The group row keeps its original degrees of freedom.
-# columns below selects the parts of the result table we'll show in the console.
+print("SYNTHETIC DATA | 2 groups x 3 conditions x 2 ROIs | 50 people, 300 rows")
+print("Group_A = adults; Group_B = adolescents. Mean BCA in uV:")
+print(data.groupby(["group", "condition", "roi"], sort=False)["bca_uv"].mean().unstack().to_string(float_format=lambda value: f"{value:.4f}"))
+print(result.to_string(index=False, float_format=lambda value: f"{value:.6g}"))
 
-print("SYNTHETIC DATA | 2 groups x 3 conditions | 25 people per group")
-print(f"GG epsilon estimated from within-group errors = {epsilon:.6f}")
-columns = ["Source", "F", "df1_for_report", "df2_for_report", "p_for_report", "np2"]
-print(result[columns].to_string(index=False, float_format=lambda value: f"{value:.6g}"))
-
-# When we read the table, start by matching each row to its research question.
-# A small group p_for_report supports an overall group difference.
-# A small condition p_for_report supports a difference somewhere across conditions.
-# A small Interaction p_for_report supports a group difference that changes by condition.
-# Each interpretation assumes the model is appropriate, and the significance threshold
-# needs to match whatever multiple-testing plan we chose (more on that below).
-#
-# An interaction doesn't require the groups to switch which one is higher.
-# A gap that grows from one condition to another can also be an interaction.
-# If we find one, we'd look at group-condition averages and planned follow-up comparisons
-# to explain the pattern. The interaction test alone doesn't identify the specific pairs.
-# Example 3 shows the between-group comparisons within each condition.
-#
-# If the interaction isn't significant, that doesn't prove the patterns are identical.
-# And if it is significant, the main effects are still averages, so they may leave out
-# a lot of the story. We'd describe the condition-specific pattern alongside them.
-# A simple plot of each group's condition averages would help explain that in a lecture.
-#
-# np2 is partial eta-squared. It describes each effect relative to that effect's
-# variation plus its error variation. It isn't the percentage of all EEG variation explained.
-# Also, a mixed ANOVA and a linear mixed-effects model are different analyses.
-# We're using the ANOVA here.
-#
-# With real data, we'd look at the residuals and unusual values, and check that
-# people are independent and the groups have a similar covariance structure.
-# GG addresses sphericity. It doesn't fix outliers, different covariance matrices
-# between groups, or bias from missing data.
-#
-# We'd also decide ahead of time which of the three effects answer our main questions.
-# If we're treating all three as one family of tests, we'd adjust their p_for_report
-# values together, for example with multipletests(..., method="holm").
-# This example hasn't done that extra adjustment. Example 3 shows how Holm works.
-# Before using these lessons together on real data, we'd plan which questions
-# we're answering, which tests we need, and which comparisons belong together.
-#
-# Now let's think about the fuller study with LOT and ROT.
+# Now let's read the full study design with LOT and ROT.
 # LOT is left occipito-temporal and ROT is right occipito-temporal.
-# Assume we measure both ROIs in every condition for each adult and adolescent.
-# We'd compare the conditions that both age groups actually completed.
+# Each participant completed the same three conditions at both ROIs.
+# We'd compare only conditions that both age groups completed in a real study.
 #
-# We'd have three factors:
+# We have three factors:
 # Group: adults or adolescents. Each person belongs to only one group.
-# Condition: Positive Valence, Negative Valence, and Neutral Angry in this example.
+# Condition: Positive Valence, Negative Valence, and Neutral Angry.
 # ROI: LOT or ROT. Both measurements come from the same person.
 # Group is between people; condition and ROI are within people.
-# That would be a 2 groups x 3 conditions x 2 ROIs mixed-design ANOVA.
-# With eight shared conditions, the design would become 2 x 8 x 2.
 #
-# We'd keep one row per participant, condition, and ROI, with their BCA value.
-# The same participant ID would connect all six measurements in the three-condition
-# example. With 50 people, we'd have 300 rows, but still only 50 participants.
-# We wouldn't treat LOT and ROT as independent participants or combine them into
-# one ROI average if our question is whether the responses differ between them.
-#
-# This fuller ANOVA would let us ask seven questions. The first three are main effects:
+# There are seven questions in the output. The first three are main effects:
 # Group: Do adults and adolescents differ, averaging across conditions and ROIs?
 # Condition: Do conditions differ, averaging across groups and ROIs?
 # ROI: Do LOT and ROT differ, averaging across groups and conditions?
@@ -195,21 +161,33 @@ print(result[columns].to_string(index=False, float_format=lambda value: f"{value
 # differs between adults and adolescents. That's a three-way interaction.
 # Basically, does the way condition differences change between LOT and ROT depend on age group?
 #
-# Here's a made-up example using just Negative Valence minus Positive Valence:
+# Here's a made-up illustration using just Negative Valence minus Positive Valence:
 #                              LOT          ROT
 # Adults' average difference:  0.02 uV      0.20 uV
 # Adolescents' difference:     0.02 uV      0.02 uV
 # For adults, the condition difference is larger at ROT. For adolescents, it stays
 # the same across the two ROIs. The change across ROIs is 0.18 uV in adults and
 # 0.00 uV in adolescents. That's the kind of pattern a three-way interaction tests.
-# These numbers alone don't establish significance. We'd need the individual data
-# to judge the uncertainty, and the full ANOVA would include all three conditions.
+# These illustration numbers aren't the generated sample means printed above.
+# They alone don't establish significance. We need individual data to judge the
+# uncertainty, and the full ANOVA includes all three conditions.
 #
 # This is why adding ROI to the model can matter. Averaging LOT and ROT together
 # could hide a regional difference. Running an ANOVA separately at each ROI and
 # finding significance at only one wouldn't establish that the ROIs differ.
 # Including ROI lets us test those differences directly, while accounting for the
 # fact that both measurements came from the same participant.
+#
+# For each row, a small p_for_report supports that effect if the assumptions hold
+# and it meets our chosen multiple-testing threshold. A nonsignificant result
+# doesn't prove that the means or patterns are identical.
+# np2 is partial eta-squared: each effect relative to itself plus its error variation.
+# It isn't the percentage of all EEG variation explained. Look at the BCA means too.
+#
+# An interaction doesn't require the groups to switch which one is higher.
+# A gap that grows from one condition or ROI to another can also be an interaction.
+# Main effects are averages, so they may leave out a lot of the story if an
+# interaction is present. We'd describe the condition- and ROI-specific patterns.
 #
 # Then we'd use focused follow-up comparisons to explain the pattern. For example,
 # we could compare Negative Valence with Positive Valence within ROT for each group.
@@ -220,12 +198,13 @@ print(result[columns].to_string(index=False, float_format=lambda value: f"{value
 # We'd choose the relevant comparisons and their multiple-testing correction in advance.
 #
 # One ANOVA model still gives us several tests, so it doesn't automatically solve
-# multiple testing. We'd focus on the effects that answer our research questions
-# and plan the corrections for those effects and any follow-up comparisons.
+# multiple testing. GG addresses sphericity, not the fact that we tested seven effects.
+# If all seven effects form one confirmatory family, we could apply Holm to their
+# seven p_for_report values together. This file hasn't applied that extra correction.
 # Planned contrasts can also be tested without requiring a significant overall ANOVA first.
 #
-# These are notes for extending the real study. The current dataset and ANOVA call
-# still have one ROI, so the printed output contains only Group, Condition, and
-# their interaction. Adding LOT and ROT requires ROI-level data and a model that
-# includes both repeated factors; it isn't just a change to the labels.
+# This calculation is for the complete, balanced two-group, two-ROI teaching design.
+# It assumes independent people and comparable error covariance in the two groups.
+# GG doesn't fix outliers, missing data, or different covariance matrices between groups.
+# A mixed ANOVA and a linear mixed-effects model are different analyses; we're using ANOVA.
 # Documentation: SOURCES.md [7], [9], [10].

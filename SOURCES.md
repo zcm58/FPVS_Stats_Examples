@@ -64,7 +64,7 @@ Campbell, A., Louw, R., Michniak, E., & Tanaka, J. W. (2020). Identity-specific 
 
 **What matches:** Repeated-measures ANOVA on baseline-corrected, summed-harmonic ROI responses with three within-person conditions; Greenhouse–Geisser (GG) correction is specified.
 
-**Difference:** Their conditions are own, friend, and stranger. They apply GG when Mauchly's test indicates a sphericity violation; our script always requests the GG result.
+**Difference:** Their conditions are own, friend, and stranger. Example 05 adds a second repeated factor, LOT versus ROT, and tests Condition, ROI, and their interaction. They apply GG when Mauchly's test indicates a sphericity violation; our script always requests the GG result. With two ROI levels, the ROI effect's epsilon is 1.
 
 ## [7] Example 06: Mixed-design ANOVA
 
@@ -74,7 +74,7 @@ Campbell, A., Louw, R., Michniak, E., & Tanaka, J. W. (2020). Identity-specific 
 
 **What matches:** ANOVA combining between-person Group with within-person Condition on baseline-subtracted FPVS amplitudes, with GG correction and partial eta-squared specified.
 
-**Difference:** Their design also includes stimulus type and, for parieto-occipital analyses, laterality. Our two-group × three-condition example is simpler. Their GG correction is conditional on sphericity violation; our script applies it to both repeated effects.
+**Difference:** Their design also includes stimulus type and, for parieto-occipital analyses, laterality. Example 06 now includes two groups, three conditions, and LOT/ROT as a repeated ROI factor. Their GG correction is conditional on sphericity violation; our script applies it to the four effects involving condition. The two-level ROI effects require no sphericity adjustment.
 
 ## [8] Other multiple-comparisons methods
 
@@ -102,8 +102,10 @@ For the lecture, these papers give us examples of Bonferroni correction and acco
 
 ## [9]–[10] Example 06: Epsilon and adjusted F-test calculations
 
-Our script subtracts each group-condition mean, estimates GG epsilon from those residuals, multiplies both degrees of freedom for Condition and Interaction by epsilon, and calculates upper-tail F probabilities. The Group effect retains its original degrees of freedom.
+For the complete, balanced two-ROI design, Example 06 creates two views of each participant-condition cell: the average of LOT and ROT, and the ROT-minus-LOT difference. The average view gives Group, Condition, and Group × Condition. The difference view gives Group × ROI, Condition × ROI, and Group × Condition × ROI. A group-adjusted intercept test on each participant's across-condition ROI difference gives the ROI main effect.
 
-**An FPVS paper explicitly documenting this exact residual-based implementation was not verified.** References [6]–[7] establish use of GG, but don't verify our custom calculation or numerical equivalence to the authors' software. The four-test family in Example 03 and the one-sided confidence bound in Example 01 are also teaching choices, not verified reproductions of the cited papers.
+Within each view, the script subtracts group-condition means and estimates GG epsilon from the residuals. It adjusts both degrees of freedom for the effects involving condition and calculates upper-tail F probabilities. Group, ROI, and Group × ROI retain their original degrees of freedom. This calculation is specific to the balanced two-ROI teaching design.
+
+**An FPVS paper explicitly documenting this exact decomposition and residual-based implementation was not verified.** References [6]–[7] establish use of GG, but don't verify our calculation or numerical equivalence to the authors' software. The repository's numerical tests compare all seven Example 06 effects with an independent orthonormal-contrast calculation, including F, degrees of freedom, epsilon, p-values, and partial eta-squared. Example 05 is also compared with Statsmodels' repeated-measures ANOVA. These checks validate the supplied synthetic design; they do not reproduce the papers' analyses. The four-test family in Example 03 and the one-sided confidence bound in Example 01 are also teaching choices.
 
 For the lecture, describe [3]–[4] as behavioral uses of the methods within an FPVS paper. For the other entries, state the matching statistical method and the listed differences. This avoids presenting every example as an exact published FPVS analysis when that has not been established.
