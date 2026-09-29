@@ -49,7 +49,7 @@ dataset will later be 'Group_B'.
 
 # We need to select your group and the specific condition that we want to test. In this example,
 # we'll be testing whether the group average response in the occipital ROI to the hypothetical positive
-# valence condition was significantly above zero, so I am defining those variables here.
+# valence condition was significantly above zero, so I am defining those variables below.
 
 selected = data[(data["group"] == "Group_A") & (data["condition"] == "Positive Valence")]
 values = selected["bca_uv"]
