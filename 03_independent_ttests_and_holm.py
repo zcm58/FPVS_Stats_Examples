@@ -7,9 +7,9 @@
 #   (own, friend, stranger) using fast periodic visual stimulation.
 #   DOI: https://doi.org/10.1016/j.neuropsychologia.2020.107415
 
-"""EXAMPLE 3: Do the two groups respond differently?
+"""EXAMPLE 3: Do the two groups respond differently in one condition?
 
-What if we wanted to make a general comparison between your group and the adolescent group? There are
+What if we wanted to make a general comparison between Group A and Group B? There are
 four tests in this 'family' of tests that we can run.
 
 1. We could pool all of your conditions together as a 'grand average', do the same thing for the adolescent
@@ -21,8 +21,8 @@ four tests in this 'family' of tests that we can run.
 
 That gives us four total statistical tests, which means we are now making
 multiple comparisons. Each time we run a statistical test with a p-value of 0.05, we are accepting that
-there's a 5% chance we're wrong. If we do that four time, the effect stacks: 5x4 = 20% chance of a false
-positive. No bueno.
+there's a 5% chance we're wrong. If we do that four times, the effect stacks: 5x4 = 20% chance of a false
+positive. No bueno. Nao e Bom.
 
 But there is hope! We can correct for multiple comparisons using a method called Holm correction.
 
